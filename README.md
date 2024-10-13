@@ -4,12 +4,16 @@
 
 - Default: use the base model `openai/whisper-large-v3-turbo` and fine-tune it on the Galgame dataset 1 epoch.
 
+- This uses [Stream in 🤗 Datasets](https://huggingface.co/docs/datasets/en/stream) by default so you don't have to (and the script will not) download all the 100GB data and the training data will be downloaded in a stream, and maybe only small amout of the disk is needed
+
+- (Or you can whole download the dataset and use it locally)
+
 - I may not maintain this repo, and the code is subject to change. I may not have fully checked the code, so something may be wrong. Just use it at your own risk.
 
 
 ## Install
 
-- Install [uv](https://docs.astral.sh/uv/) (or you can use the usual venv and pip).
+- Install [uv](https://docs.astral.sh/uv/) (or you can use the usual venv and pip)
 
 Windows:
 ```bash
@@ -36,9 +40,9 @@ uv run train.py [--original_repo_id <original_repo_id>] [--repo_id <repo_id>] [-
 - `--original_repo_id`: The base model to fine-tune. Default: `openai/whisper-large-v3-turbo`.
 - `--repo_id`: The model name of the fine-tuned model. Default: `galgame-whisper-large-v3-turbo`.
 - `--no_freeze_encoder`: Flag to NOT freeze the encoder. Default: `False`, so by default the encoder is frozen.
-- `--batch_size`: The batch size. Default: `32`.
-- `--use_local_dataset`: Flag to use local dataset. Default: `False`. If you have already downloaded the entire dataset (in tar format), you can use this flag to use the local dataset.
-- `--local_dataset_path`: The path to the local dataset in case you use the local dataset.
+- `--batch_size`: The batch size. Default: `32` (In my environment: RTX 4070 VRAM 12GB, this works and seems to be stable)
+- `--use_local_dataset`: Flag to use local dataset. Default: `False`. If you have already downloaded the entire dataset (in tar file format), you can use this flag to use the local dataset.
+- `--local_dataset_path`: The path to the local dataset in case you use the local dataset. Must contain `data` folder (containing all the tar files) as a subfolder.
 - `--num_eval_steps`: The number of samples (in terms of steps, maybe) to evaluate the model. Default: `25`, and the number of samples is `batch_size * num_eval_steps`.
 - `--push_to_hub` (store_true): Flag to push (backup) all the checkpoints to a private repository of 🤗. Default: `False`. Maybe you should have logged in to use it.
 - `--hub_model_id`: The repo_id to push the checkpoints.
