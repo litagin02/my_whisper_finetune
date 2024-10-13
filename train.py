@@ -28,15 +28,15 @@ NUM_TAR_FILES = 115
 # 0 - 102まで（90.1%）をtrainとして使うとして、そのtarファイルのデータ数
 NUM_TRAIN_SAMPLES = 3_374_929
 # 103 - 114までをtestとして使う
-
 TEST_START_INDEX = 103
-
+# Hugging Face Datasetsのrepo_id
+# https://huggingface.co/datasets/litagin/Galgame_Speech_ASR_16kHz
 HF_PATH_TO_DATASET = "litagin/Galgame_Speech_ASR_16kHz"
 
 disable_caching()
 
 
-# ログの設定
+# transformersのloggerをloguruへ送るための設定
 class InterceptHandler(logging.Handler):
     def emit(self, record: logging.LogRecord) -> None:
         # Get corresponding Loguru level if it exists.
@@ -130,6 +130,11 @@ def prepare_dataset_wrapper(processor):
 
 metric = evaluate.load("cer")
 
+# `cer`の他に`normalized cer`: 予測と正解を正規化してからCERも計算する
+# 正規化は、簡単のため「マッチするもの以外を削除」するだけ
+# 学習データは、句読点類に加えて以下のみからなる（英字数字は半角に変換済み）ので、
+# それ以外を削除することで正規化を行う
+
 # 許容するもの「以外」にマッチするパターン
 INVALID_PATTERN = re.compile(
     r"[^\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF\u3400-\u4DBF\u3005"  # ひらがな、カタカナ、漢字
@@ -139,9 +144,10 @@ INVALID_PATTERN = re.compile(
 
 
 def normalizer(text, add_ellipsis=False):
-    # Remove Invalid Characters
     text = INVALID_PATTERN.sub("", text)
     if text == "" and add_ellipsis:
+        # 正規化の結果、空文字列になった場合は「…」に置き換える
+        # 正解ラベルに空文字列があるとエラーになるのでこうする
         text = "…"
     return text
 
@@ -210,8 +216,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--local_dataset_path",
         type=str,
-        default="C:/AI/galgame_dataset/Galgame_Speech_ASR_16kHz",
-        # default=None,
+        # default="C:/AI/galgame_dataset/Galgame_Speech_ASR_16kHz",
+        default=None,
     )
     parser.add_argument("--num_eval_step", type=int, default=25)
     parser.add_argument("--push_to_hub", action="store_true")
@@ -269,6 +275,7 @@ if __name__ == "__main__":
         model.generate, language="Japanese", task="transcribe", use_cache=True
     )
 
+    # ハイパラはお好きに変更してください
     training_args = Seq2SeqTrainingArguments(
         output_dir=repo_id,
         per_device_train_batch_size=batch_size,

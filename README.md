@@ -1,6 +1,10 @@
 # My code for fine-tuning Whisper on Galgame Dataset
 
-- [Galgame_Speech_ASR_16kHz](https://huggingface.co/datasets/litagin/Galgame_Speech_ASR_16kHz)
+- My code for fine-tuning [Whisper model in 🤗](https://huggingface.co/models?other=whisper) with [Galgame_Speech_ASR_16kHz](https://huggingface.co/datasets/litagin/Galgame_Speech_ASR_16kHz) using [🤗 Transformers](https://huggingface.co/docs/transformers/en/index)
+
+- Default: use the base model `openai/whisper-large-v3-turbo` and fine-tune it on the Galgame dataset 1 epoch.
+
+- I may not maintain this repo, and the code is subject to change. I may not have fully checked the code, so something may be wrong. Just use it at your own risk.
 
 
 ## Install
