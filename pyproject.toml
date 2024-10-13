@@ -1,0 +1,18 @@
+[project]
+name = "my-whisper-finetune"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "datasets>=3.0.1",
+    "evaluate>=0.4.3",
+    "jiwer>=3.0.4",
+    "librosa>=0.10.2.post1",
+    "loguru>=0.7.2",
+    "numpy<2",
+    "soundfile>=0.12.1",
+    "tensorboard>=2.18.0",
+    "torch>=2.4.1",
+    "transformers[torch]>=4.45.2",
+]
