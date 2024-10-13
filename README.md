@@ -4,7 +4,7 @@
 
 - Default: use the base model `openai/whisper-large-v3-turbo` and fine-tune it on the Galgame dataset 1 epoch.
 
-- This uses [Stream in 🤗 Datasets](https://huggingface.co/docs/datasets/en/stream) by default so you don't have to (and the script will not) download all the 100GB data and the training data will be downloaded in a stream, and maybe only small amout of the disk is needed
+- This uses [Dataset Streaming in 🤗 Datasets](https://huggingface.co/docs/datasets/en/stream) by default so you don't have to (and the script will not) download all the 100GB data and the training data will be downloaded in a stream, and maybe only small amout of the disk is needed
 
 - (Or you can whole download the dataset and use it locally)
 
@@ -34,7 +34,16 @@ uv sync
 - Maybe you can resume the training after the training is interrupted (not fully checked, so may not work).
 
 ```bash
-uv run train.py [--original_repo_id <original_repo_id>] [--repo_id <repo_id>] [--no_freeze_encoder] [--batch_size <batch_size>] [--use_local_dataset] [--local_dataset_path <local_dataset_path>] [--num_eval_steps <num_eval_steps>] [--push_to_hub] [--hub_model_id <hub_model_id>]
+uv run train.py \
+  [--original_repo_id <original_repo_id>] \
+  [--repo_id <repo_id>] \
+  [--no_freeze_encoder] \
+  [--batch_size <batch_size>] \
+  [--use_local_dataset] \
+  [--local_dataset_path <local_dataset_path>] \
+  [--num_eval_steps <num_eval_steps>] \
+  [--push_to_hub] \
+  [--hub_model_id <hub_model_id>]
 ```
 
 - `--original_repo_id`: The base model to fine-tune. Default: `openai/whisper-large-v3-turbo`.
