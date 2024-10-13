@@ -5,6 +5,8 @@
 
 ## Install
 
+- Install [uv](https://docs.astral.sh/uv/) (or you can use the usual venv and pip).
+
 Windows:
 ```bash
 uv venv
