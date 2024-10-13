@@ -15,6 +15,14 @@ uv sync
 
 ## Train
 
+- **See [train.py](train.py) by yourself**. The script is subject to change, and something may be wrong (Not fully checked since I haven't trained 1 ecpoch!).
+
+- Basically the following command fine-tunes the model on the Galgame dataset **1 epoch** (some data are not used and will be used for eval).
+
+- Save and eval every 1000 steps, and eval on the very beginning.
+
+- Maybe you can resume the training after the training is interrupted (not fully checked, so may not work).
+
 ```bash
 uv run train.py [--original_repo_id <original_repo_id>] [--repo_id <repo_id>] [--no_freeze_encoder] [--batch_size <batch_size>] [--use_local_dataset] [--local_dataset_path <local_dataset_path>] [--num_eval_steps <num_eval_steps>] [--push_to_hub] [--hub_model_id <hub_model_id>]
 ```
