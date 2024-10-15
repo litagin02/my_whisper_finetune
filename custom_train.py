@@ -1,3 +1,4 @@
+import gc
 import math
 import re
 import shutil
@@ -35,6 +36,7 @@ SAVE_DIR = "checkpoints/galgame-whisper-large-v3-turbo-clip-grad-norm"
 NUM_EPOCHS = 10
 LEARNING_RATE = 1e-5
 BATCH_SIZE = 16
+EVAL_BATCH_SIZE = 4
 WEIGHT_DECAY = 0.0
 NUM_TEST_SAMPLES = 128
 NUM_WARMUP_STEPS = 5000
@@ -231,14 +233,14 @@ if __name__ == "__main__":
     train_loader = DataLoader(
         dataset["train"],
         collate_fn=data_collator,
-        batch_size=16,
+        batch_size=BATCH_SIZE,
         shuffle=False,
         pin_memory=True,
     )
     test_loader = DataLoader(
         dataset["test"].take(NUM_TEST_SAMPLES),
         collate_fn=data_collator,
-        batch_size=16,
+        batch_size=EVAL_BATCH_SIZE,
         shuffle=False,
     )
 
@@ -336,11 +338,12 @@ if __name__ == "__main__":
                 eval_count += 1
                 test_batch = {k: v.to("cuda") for k, v in test_batch.items()}
                 with torch.no_grad():
-                    output = model.generate(
-                        input_features=test_batch["input_features"],
-                        language="Japanese",
-                        max_length=64,
-                    )
+                    with torch.autocast("cuda"):
+                        output = model.generate(
+                            input_features=test_batch["input_features"],
+                            language="Japanese",
+                            max_length=64,
+                        )
                 metrics = compute_metrics(
                     pred_ids=output,
                     label_ids=test_batch["labels"],
@@ -354,6 +357,6 @@ if __name__ == "__main__":
             }
             accelerator.log(log_dict, step=current_step)
             del output, metrics, log_dict, test_batch
-            # torch.cuda.empty_cache()
-            # gc.collect()
+            torch.cuda.empty_cache()
+            gc.collect()
             logger.success("Evaluation done.")
