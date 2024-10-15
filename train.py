@@ -1,18 +1,13 @@
 import argparse
-import inspect
-import logging
 import math
 import re
-import sys
 from dataclasses import dataclass
 from functools import partial
 from typing import Any, Dict, List, Union
 
 import evaluate
 import torch
-import transformers
 from datasets import IterableDatasetDict, disable_caching, load_dataset
-from loguru import logger
 from transformers import (
     Seq2SeqTrainer,
     Seq2SeqTrainingArguments,
@@ -21,6 +16,8 @@ from transformers import (
     WhisperProcessor,
     WhisperTokenizer,
 )
+
+from utils import log_format, logger
 
 # Galgame_Speech_ASR_16kHzの全部のtarファイル数
 # 0-indexedで、000から114までの115個
@@ -34,49 +31,13 @@ TEST_START_INDEX = 103
 HF_PATH_TO_DATASET = "litagin/Galgame_Speech_ASR_16kHz"
 
 disable_caching()
-
-
-# transformersのloggerをloguruへ送るための設定
-class InterceptHandler(logging.Handler):
-    def emit(self, record: logging.LogRecord) -> None:
-        # Get corresponding Loguru level if it exists.
-        level: str | int
-        try:
-            level = logger.level(record.levelname).name
-        except ValueError:
-            level = record.levelno
-
-        # Find caller from where originated the logged message.
-        frame, depth = inspect.currentframe(), 0
-        while frame and (depth == 0 or frame.f_code.co_filename == logging.__file__):
-            frame = frame.f_back
-            depth += 1
-
-        logger.opt(depth=depth, exception=record.exc_info).log(
-            level, record.getMessage()
-        )
-
-
-log_format = (
-    "<green>{time:YYYY-MM-DD HH:mm:ss.S}</green> | "
-    "<level>{level:^8}</level> | "
-    "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | <level>{message}</level>"
-)
-# loguru に出力フォーマットを設定
-logger.remove()  # デフォルトのハンドラを削除
-logger.add(sys.stdout, format=log_format, level="INFO")
+TEST_START_INDEX = 103
 logger.add(
     "logs/large-v3-turbo.log",
     format=log_format,
     level="INFO",
     rotation="00:00",
 )
-
-logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
-
-# transformers.logging.set_verbosity_info()
-transformers.logging.disable_default_handler()
-transformers.logging.add_handler(InterceptHandler())
 
 
 @dataclass
@@ -128,8 +89,6 @@ def prepare_dataset_wrapper(processor):
     return prepare_dataset
 
 
-metric = evaluate.load("cer")
-
 # `cer`の他に`normalized cer`: 予測と正解を正規化してからCERも計算する
 # 正規化は、簡単のため「マッチするもの以外を削除」するだけ
 # 学習データは、句読点類に加えて以下のみからなる（英字数字は半角に変換済み）ので、
@@ -143,7 +102,7 @@ INVALID_PATTERN = re.compile(
 )
 
 
-def normalizer(text, add_ellipsis=False):
+def normalizer(text, add_ellipsis=True):
     text = INVALID_PATTERN.sub("", text)
     if text == "" and add_ellipsis:
         # 正規化の結果、空文字列になった場合は「…」に置き換える
@@ -152,7 +111,8 @@ def normalizer(text, add_ellipsis=False):
     return text
 
 
-def compute_metrics(pred):
+def compute_metrics(pred, tokenizer):
+    metric = evaluate.load("cer")
     pred_ids = pred.predictions
     label_ids = pred.label_ids
 
@@ -164,7 +124,7 @@ def compute_metrics(pred):
     label_str = tokenizer.batch_decode(label_ids, skip_special_tokens=True)
 
     normalized_pred_str = [normalizer(text) for text in pred_str]
-    normalized_label_str = [normalizer(text, add_ellipsis=True) for text in label_str]
+    normalized_label_str = [normalizer(text) for text in label_str]
 
     cer = 100 * metric.compute(predictions=pred_str, references=label_str)
     normalized_cer = 100 * metric.compute(
@@ -216,16 +176,16 @@ if __name__ == "__main__":
     parser.add_argument(
         "--local_dataset_path",
         type=str,
-        # default="C:/AI/galgame_dataset/Galgame_Speech_ASR_16kHz",
-        default=None,
+        default="C:/AI/galgame_dataset/Galgame_Speech_ASR_16kHz",
+        # default=None,
     )
-    parser.add_argument("--num_eval_step", type=int, default=25)
+    parser.add_argument("--num_eval_step", type=int, default=0)
     parser.add_argument("--push_to_hub", action="store_true")
     parser.add_argument(
         "--hub_model_id",
         type=str,
-        default=None,
-        # default="litagin/galgame-whisper-large-v3-turbo-logs",
+        # default=None,
+        default="litagin/galgame-whisper-large-v3-turbo-logs",
     )
 
     args = parser.parse_args()
@@ -308,7 +268,7 @@ if __name__ == "__main__":
         save_total_limit=10,
         hub_model_id=hub_model_id,
         hub_strategy="all_checkpoints",
-        eval_on_start=True,
+        # eval_on_start=True,
     )
 
     original_column_names = list(next(iter(dataset.values())).features.keys())
@@ -320,7 +280,7 @@ if __name__ == "__main__":
         args=training_args,
         model=model,
         train_dataset=dataset["train"],
-        eval_dataset=dataset["test"].take(eval_size),
+        # eval_dataset=dataset["test"].take(eval_size),
         data_collator=data_collator,
         compute_metrics=compute_metrics,
         tokenizer=processor,
@@ -329,9 +289,11 @@ if __name__ == "__main__":
     logger.info(f"Starting training for {repo_id}...")
     try:
         # Resumeしようとする
+        logger.info("Trying to resume from the latest checkpoint...")
         trainer.train(resume_from_checkpoint=True)
-    except ValueError:
-        # Resumeできなかったら、最初から
+    except ValueError as e:
+        logger.warning(f"Failed to resume from the latest checkpoint: {e}")
+        logger.info("Start training from the beginning...")
         trainer.train()
     except Exception as e:
         logger.exception(e)

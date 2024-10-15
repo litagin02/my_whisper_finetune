@@ -25,36 +25,22 @@ uv sync
 
 ## Train
 
-- **See [train.py](train.py) by yourself**. The script is subject to change, and something may be wrong (Not fully checked since I haven't trained 1 ecpoch!).
+**See code by yourself for how to train and modify the code by yourself before training!**
 
-- Basically the following command fine-tunes the model on the Galgame dataset **1 epoch** (some data are not used and will be used for eval).
+- 2024-10-15: Add [custom_train.py](custom_train.py), which uses torchdata for data loading, which is faster when resuming the training!
+  - But this doesn't use 🤗 Transformers library and I wrote a custom train loop, so something may be wrong
+  - Also VRAM Usage is higher than the original (so by default batch size 16), and I don't know why
+   (maybe 🤗 Trainer does a lot of optimization and I don't know how to do it, please tell me!)
+  - Also the code doesn't use argparse, so you have to modify the code by yourself
 
-- Save and eval every 1000 steps, and eval on the very beginning.
+- [train.py](train.py)
+  - The script is subject to change, and something may be wrong (Not fully checked since I haven't trained 1 ecpoch!).
 
-- Maybe you can resume the training after the training is interrupted (not fully checked, so may not work).
+  - Basically the following command fine-tunes the model on the Galgame dataset **1 epoch** (some data are not used and will be used for eval).
 
-```bash
-uv run train.py \
-  [--original_repo_id <original_repo_id>] \
-  [--repo_id <repo_id>] \
-  [--no_freeze_encoder] \
-  [--batch_size <batch_size>] \
-  [--use_local_dataset] \
-  [--local_dataset_path <local_dataset_path>] \
-  [--num_eval_steps <num_eval_steps>] \
-  [--push_to_hub] \
-  [--hub_model_id <hub_model_id>]
-```
+  - Save and eval every 1000 steps, and eval on the very beginning.
 
-- `--original_repo_id`: The base model to fine-tune. Default: `openai/whisper-large-v3-turbo`.
-- `--repo_id`: The model name of the fine-tuned model. Default: `galgame-whisper-large-v3-turbo`.
-- `--no_freeze_encoder`: Flag to NOT freeze the encoder. Default: `False`, so by default the encoder is frozen.
-- `--batch_size`: The batch size. Default: `32` (In my environment: RTX 4070 VRAM 12GB, this works and seems to be stable)
-- `--use_local_dataset`: Flag to use local dataset. Default: `False`. If you have already downloaded the entire dataset (in tar file format), you can use this flag to use the local dataset.
-- `--local_dataset_path`: The path to the local dataset in case you use the local dataset. Must contain `data` folder (containing all the tar files) as a subfolder.
-- `--num_eval_steps`: The number of samples (in terms of steps, maybe) to evaluate the model. Default: `25`, and the number of samples is `batch_size * num_eval_steps`.
-- `--push_to_hub` (store_true): Flag to push (backup) all the checkpoints to a private repository of 🤗. Default: `False`. Maybe you should have logged in to use it.
-- `--hub_model_id`: The repo_id to push the checkpoints.
+  - Maybe you can resume the training after the training is interrupted (**but extrimely slow since we have to skip from the beginning of the streaming dataset**).
 
 ## Reference
 

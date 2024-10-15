@@ -14,5 +14,6 @@ dependencies = [
     "soundfile>=0.12.1",
     "tensorboard>=2.18.0",
     "torch>=2.4.1",
+    "torchdata>=0.8.0",
     "transformers[torch]>=4.45.2",
 ]

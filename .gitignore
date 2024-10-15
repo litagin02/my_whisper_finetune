@@ -1,2 +1,4 @@
 logs/
-galgame-whisper-large-v3-turbo/
+checkpoints/
+playgrounds/
+__pycache__/
